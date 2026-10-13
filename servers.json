@@ -1,0 +1,7 @@
+{
+  "servers": [
+    { "name": "my-anisette", "address": "https://anisette-v3-muv7.onrender.com" },
+    { "name": "SideStore", "address": "https://ani.sidestore.io" },
+    { "name": "Steady", "address": "https://ani.sidestore.app" }
+  ]
+}
