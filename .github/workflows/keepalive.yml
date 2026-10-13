@@ -1,0 +1,42 @@
+# 保活：定时 ping 自建 anisette 服务器，防止 Render 免费实例休眠
+#
+# 说明
+# - 免费实例 15 分钟无流量就休眠，唤醒要 1 分钟，而且会重新下载苹果的库
+# - GitHub Actions 对公开仓库免费，所以不需要注册 UptimeRobot 之类的服务
+#
+# 注意
+# 1. fork 仓库的定时工作流默认是「禁用」的
+#    → 提交后去仓库的 Actions 标签页，点一下 Enable workflow
+# 2. GitHub 允许的最小间隔是 5 分钟，且高负载时可能延迟几分钟
+# 3. 仓库连续 60 天没有活动，GitHub 会自动停掉定时工作流（回来手动启用即可）
+
+name: Keep anisette server awake
+
+on:
+  schedule:
+    # 24 小时不间断，每 5 分钟一次
+    # 一个月约 730 小时，Render 免费额度是 750 小时/月，刚好够（余量很小）
+    - cron: "*/5 * * * *"
+
+    # 【省额度方案】只在 08:00–24:00（北京时间）保活，约 480 小时/月，余量充足
+    # 北京时间 = UTC+8，所以 00:00–16:00 UTC 就是 08:00–24:00 北京时间
+    # 用这一条就删掉上面那条
+    # - cron: "*/5 0-15 * * *"
+
+  # 允许在 Actions 页面手动触发一次
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping anisette server
+        run: |
+          URL="https://anisette-v3-muv7.onrender.com/v3/client_info"
+          # /v3/client_info 是轻量端点，不会触发 provisioning，适合高频探测
+          code=$(curl -sS --max-time 150 -o /dev/null -w "%{http_code}" "$URL")
+          echo "HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::warning::anisette 服务器返回 $code"
+            exit 1
+          fi
